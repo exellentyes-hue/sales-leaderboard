@@ -14,9 +14,17 @@
     *{box-sizing:border-box}
     html,body{height:100%}
     body{margin:0;font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans",sans-serif;background:radial-gradient(1200px 600px at 80% -10%, #1b2652 0%, rgba(27,38,82,0) 70%), var(--bg);color:var(--text);}
+
     .container{max-width:1100px;margin:0 auto;padding:24px}
-    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
-    .title{font-weight:700;font-size:28px;letter-spacing:.2px;display:flex;align-items:center;gap:10px}
+    header{display:flex;gap:16px;align-items:center;justify-content:center;margin-bottom:18px}
+    .title{
+      font-weight:700;
+      font-size:36px;
+      letter-spacing:.2px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
     .pill{font-size:12px;background:rgba(125,211,252,.15);border:1px solid rgba(125,211,252,.35);padding:6px 10px;border-radius:999px;color:var(--accent)}
     .grid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:16px}
     @media(min-width:720px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -28,53 +36,93 @@
     .badge{font-size:11px;color:#cbd5e1;background:#0f172a;border:1px solid rgba(255,255,255,.08);padding:4px 8px;border-radius:999px}
     .ftd{font-weight:700}
     .ftd.up{color:var(--good)}
+    .first-place-row {
+      background-color: #FFD700;  /* золотой фон */
+      color: #FFD700;  /* золотые буквы */
+    }
     .footer{opacity:.75;font-size:12px;margin-top:10px}
     .toolbar{display:flex;gap:8px;align-items:center}
     button{cursor:pointer;background:#1e293b;color:#e2e8f0;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 10px;font-weight:600}
     button:hover{background:#243046}
-    input[type="text"]{width:360px;max-width:56vw;background:#0b1327;color:#e2e8f0;border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:8px 10px}
     .hint{font-size:12px;color:var(--muted)}
+
+    /* ===== Оверлей с эффектами ===== */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 72px;
+      font-weight: 900;
+      color: var(--accent);
+      z-index: 9999;
+      text-align: center;
+      text-transform: uppercase;
+      opacity: 0;
+      pointer-events: none;
+    }
+    #overlay.show {
+      animation: zoomGlow 2s ease forwards;
+    }
+
+    @keyframes zoomGlow {
+      0% { transform: scale(0.2); opacity: 0; text-shadow: 0 0 0px var(--accent); }
+      40% { transform: scale(1.3); opacity: 1; text-shadow: 0 0 20px var(--accent), 0 0 40px #0ff; }
+      70% { transform: scale(1); opacity: 1; text-shadow: 0 0 25px #fff, 0 0 50px var(--accent); }
+      100% { transform: scale(1); opacity: 0; text-shadow: 0 0 0px transparent; }
+    }
+
+    #overlay span {
+      background: linear-gradient(270deg, #7dd3fc, #34d399, #f59e0b, #ef4444, #7dd3fc);
+      background-size: 1000% 1000%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradientMove 3s linear infinite;
+    }
+
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Canvas для денег */
+    #money-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5000;
+    }
   </style>
 </head>
 <body>
   <canvas id="confetti-canvas"></canvas>
+  <canvas id="money-canvas"></canvas>
   <div class="container">
     <header>
-      <div class="title">🏆 Sales Leaderboard <span class="pill" id="status">offline</span></div>
-      <div class="toolbar">
-        <button id="simulate">Смоделировать обновление</button>
+      <div class="title">
+        <span>🏆</span> Sales Leaderboard <span>🏆</span>
       </div>
     </header>
 
-    <div class="card" style="margin-bottom:14px">
-      <div class="hint">
-        Подключите Google Sheets API: укажите <strong>SHEET_ID</strong>, <strong>API_KEY</strong> и <strong>RANGE</strong> в настройках кода ниже. 
-        Таблица должна иметь колонки: <code>Team</code>, <code>Stage</code>, <code>FTD</code>.
-      </div>
-    </div>
-
     <div id="grid" class="grid"></div>
-
-    <div class="footer">Обновление каждые <span id="pollMs">5000</span> мс • Источник: Google Sheets</div>
   </div>
 
-  <!-- canvas-confetti -->
+  <div id="overlay"><span></span></div>
+
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.browser.min.js"></script>
 
   <script>
-  // ===== НАСТРОЙКИ =====
   const CONFIG = {
-    SHEET_ID: "1mErOW57MrU_fhQnRsI1ZSldw7dpd7lrl4yu7EgMpx1o", // пример: 1AbCdEfG... из URL таблицы
+    SHEET_ID: "1mErOW57MrU_fhQnRsI1ZSldw7dpd7lrl4yu7EgMpx1o",
     API_KEY:  "AIzaSyCFS9Tse6vuK2O3PK4PyS0DDgRIzbC1F2E",
-    RANGE:    "Sheet1!A:C", // A: Team, B: Stage, C: FTD
+    RANGE:    "Sheet1!A:C",
     POLL_MS:  5000
   };
 
-  // ===== ВСПОМОГАТЕЛЬНОЕ =====
   const statusEl = document.getElementById('status');
-  const pollEl = document.getElementById('pollMs');
-  pollEl.textContent = CONFIG.POLL_MS;
-
   let prevByStage = new Map();
 
   function makeConfettiBurst() {
@@ -87,6 +135,61 @@
     })();
   }
 
+  function makeMoneyRain() {
+    const canvas = document.getElementById("money-canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const img = new Image();
+    img.src = "https://upload.wikimedia.org/wikipedia/commons/1/1a/USA_100_Dollar_Bill_Series2009_Obverse.png";
+
+    const bills = [];
+    const count = 20;
+    for (let i = 0; i < count; i++) {
+      bills.push({
+        x: Math.random() * canvas.width,
+        y: -100,
+        speed: 2 + Math.random() * 3,
+        rotation: Math.random() * 360,
+        rotationSpeed: (Math.random() - 0.5) * 10,
+        size: 120 + Math.random() * 60
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      bills.forEach(b => {
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate((b.rotation * Math.PI) / 180);
+        ctx.drawImage(img, -b.size / 2, -b.size / 4, b.size, b.size/2);
+        ctx.restore();
+
+        b.y += b.speed;
+        b.rotation += b.rotationSpeed;
+      });
+
+      if (bills.some(b => b.y < canvas.height + 100)) {
+        requestAnimationFrame(draw);
+      }
+    }
+
+    img.onload = draw;
+  }
+
+  function showOverlay(name, ftd) {
+    const overlay = document.getElementById('overlay');
+    const span = overlay.querySelector("span");
+    span.textContent = `${name}: ${ftd} 🚀`;
+    overlay.classList.remove("show");
+    void overlay.offsetWidth;
+    overlay.classList.add("show");
+    setTimeout(() => {
+      overlay.classList.remove("show");
+    }, 2500);
+  }
+
   function groupByTeam(rows){
     const teams = {};
     rows.forEach(r => {
@@ -96,7 +199,7 @@
     return teams;
   }
 
-  function render(rows){
+  function render(rows) {
     const grid = document.getElementById('grid');
     grid.innerHTML = '';
     const teams = groupByTeam(rows);
@@ -112,17 +215,24 @@
       const list = document.createElement('div');
       list.className = 'list';
 
+      let counter = 1; // Инициализируем счетчик
+
       teams[team]
-        .sort((a,b) => (b.ftd||0) - (a.ftd||0))
-        .forEach(row => {
+        .sort((a,b) => (b.ftd || 0) - (a.ftd || 0))
+        .forEach((row, index) => {
           const li = document.createElement('div');
           li.className = 'row';
+
+          // Добавляем проверку для первого места и применяем класс для всей строки
+          if (index === 0) {
+            li.classList.add('first-place-row');  // Подсвечиваем всю строку
+          }
 
           const left = document.createElement('div');
           left.className = 'name';
           const badge = document.createElement('span');
           badge.className = 'badge';
-          badge.textContent = 'Stage';
+          badge.textContent = counter; // Выводим номер
           const nm = document.createElement('span');
           nm.textContent = row.stage;
           left.appendChild(badge);
@@ -135,6 +245,8 @@
           li.appendChild(left);
           li.appendChild(right);
           list.appendChild(li);
+
+          counter++; // Увеличиваем счетчик для следующего участника
         });
 
       card.appendChild(list);
@@ -142,8 +254,7 @@
     });
   }
 
-  function toObjects(values){
-    // ожидается заголовок: Team | Stage | FTD
+  function toObjects(values) {
     const [header, ...rows] = values;
     const idx = {
       team: header.findIndex(h => /team/i.test(h)),
@@ -156,48 +267,37 @@
       ftd: Number(r[idx.ftd] ?? 0)
     }));
 
-    // отметим рост FTD
     out.forEach(o => {
       const prev = prevByStage.get(o.stage);
       if (prev != null && o.ftd > prev) {
         o._up = true;
+        makeConfettiBurst();
+        makeMoneyRain();
+        showOverlay(o.stage, o.ftd);
       } else {
         o._up = false;
       }
     });
 
-    // обновим словарь предыдущих
     out.forEach(o => prevByStage.set(o.stage, o.ftd));
-
-    // если есть хотя бы один рост — салют
-    if (out.some(o => o._up)) makeConfettiBurst();
     return out;
   }
 
-  async function fetchFromSheets(){
+  async function fetchFromSheets() {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(CONFIG.RANGE)}?key=${CONFIG.API_KEY}`;
     const res = await fetch(url);
-    if(!res.ok) throw new Error('Google Sheets API error');
+    if (!res.ok) throw new Error('Google Sheets API error');
     const json = await res.json();
     return json.values;
   }
 
-  async function load(){
+  async function load() {
     try {
       const values = await fetchFromSheets();
       const rows = toObjects(values);
       render(rows);
-      statusEl.textContent = 'live';
-      statusEl.style.color = '#34d399';
-      statusEl.style.borderColor = 'rgba(52,211,153,.5)';
-      statusEl.style.background = 'rgba(52,211,153,.12)';
     } catch (e) {
       console.warn(e);
-      statusEl.textContent = 'offline (sample)';
-      statusEl.style.color = '#fbbf24';
-      statusEl.style.borderColor = 'rgba(251,191,36,.5)';
-      statusEl.style.background = 'rgba(251,191,36,.12)';
-      // Фолбэк-данные для демонстрации
       const sample = [
         ['Team','Stage','FTD'],
         ['Team Alpha','Иван',5],
@@ -210,23 +310,8 @@
     }
   }
 
-  // Поллинг
   load();
   setInterval(load, CONFIG.POLL_MS);
-
-  // Кнопка: смоделировать рост FTD (для теста фейерверков)
-  document.getElementById('simulate').addEventListener('click', () => {
-    // вручную поднимем одного случайного участника
-    const grid = document.querySelectorAll('.row');
-    if (!grid.length) return;
-    const idx = Math.floor(Math.random() * grid.length);
-    const row = grid[idx];
-    const name = row.querySelector('.name span:last-child')?.textContent || '';
-    const current = Number(row.querySelector('.ftd')?.textContent || 0);
-    prevByStage.set(name, current); // зафиксируем прошлое
-    // следующее обновление загрузит данные; а сейчас просто запустим салют
-    makeConfettiBurst();
-  });
   </script>
 </body>
 </html>
