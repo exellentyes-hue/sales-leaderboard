@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sales Leaderboard — FTD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0b1020;--panel:#121933;--muted:#aab1c3;--text:#e8ecf8;--accent:#7dd3fc;--good:#34d399;--warn:#f59e0b;--bad:#ef4444;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans",sans-serif;background:radial-gradient(1200px 600px at 80% -10%, #1b2652 0%, rgba(27,38,82,0) 70%), var(--bg);color:var(--text);}
+    .container{max-width:1100px;margin:0 auto;padding:24px}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .title{font-weight:700;font-size:28px;letter-spacing:.2px;display:flex;align-items:center;gap:10px}
+    .pill{font-size:12px;background:rgba(125,211,252,.15);border:1px solid rgba(125,211,252,.35);padding:6px 10px;border-radius:999px;color:var(--accent)}
+    .grid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:16px}
+    @media(min-width:720px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00));border:1px solid rgba(255,255,255,.08);backdrop-filter: blur(6px);border-radius:18px;padding:16px 14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .card h2{margin:4px 0 10px 0;font-size:18px;font-weight:700;color:#e2e8f0}
+    .list{display:flex;flex-direction:column}
+    .row{display:flex;align-items:center;justify-content:space-between;padding:10px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);margin-bottom:8px}
+    .row .name{display:flex;align-items:center;gap:10px;font-weight:600}
+    .badge{font-size:11px;color:#cbd5e1;background:#0f172a;border:1px solid rgba(255,255,255,.08);padding:4px 8px;border-radius:999px}
+    .ftd{font-weight:700}
+    .ftd.up{color:var(--good)}
+    .footer{opacity:.75;font-size:12px;margin-top:10px}
+    .toolbar{display:flex;gap:8px;align-items:center}
+    button{cursor:pointer;background:#1e293b;color:#e2e8f0;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 10px;font-weight:600}
+    button:hover{background:#243046}
+    input[type="text"]{width:360px;max-width:56vw;background:#0b1327;color:#e2e8f0;border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:8px 10px}
+    .hint{font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <canvas id="confetti-canvas"></canvas>
+  <div class="container">
+    <header>
+      <div class="title">🏆 Sales Leaderboard <span class="pill" id="status">offline</span></div>
+      <div class="toolbar">
+        <button id="simulate">Смоделировать обновление</button>
+      </div>
+    </header>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="hint">
+        Подключите Google Sheets API: укажите <strong>SHEET_ID</strong>, <strong>API_KEY</strong> и <strong>RANGE</strong> в настройках кода ниже. 
+        Таблица должна иметь колонки: <code>Team</code>, <code>Stage</code>, <code>FTD</code>.
+      </div>
+    </div>
+
+    <div id="grid" class="grid"></div>
+
+    <div class="footer">Обновление каждые <span id="pollMs">5000</span> мс • Источник: Google Sheets</div>
+  </div>
+
+  <!-- canvas-confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+  // ===== НАСТРОЙКИ =====
+  const CONFIG = {
+    SHEET_ID: "1mErOW57MrU_fhQnRsI1ZSldw7dpd7lrl4yu7EgMpx1o", // пример: 1AbCdEfG... из URL таблицы
+    API_KEY:  "AIzaSyCFS9Tse6vuK2O3PK4PyS0DDgRIzbC1F2E",
+    RANGE:    "Sheet1!A:C", // A: Team, B: Stage, C: FTD
+    POLL_MS:  5000
+  };
+
+  // ===== ВСПОМОГАТЕЛЬНОЕ =====
+  const statusEl = document.getElementById('status');
+  const pollEl = document.getElementById('pollMs');
+  pollEl.textContent = CONFIG.POLL_MS;
+
+  let prevByStage = new Map();
+
+  function makeConfettiBurst() {
+    const duration = 1200;
+    const end = Date.now() + duration;
+    (function frame() {
+      confetti({ particleCount: 3, angle: 60, spread: 65, origin: { x: 0 }, scalar: 1.2 });
+      confetti({ particleCount: 3, angle: 120, spread: 65, origin: { x: 1 }, scalar: 1.2 });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    })();
+  }
+
+  function groupByTeam(rows){
+    const teams = {};
+    rows.forEach(r => {
+      if(!teams[r.team]) teams[r.team] = [];
+      teams[r.team].push(r);
+    });
+    return teams;
+  }
+
+  function render(rows){
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    const teams = groupByTeam(rows);
+    const teamNames = Object.keys(teams).sort();
+
+    teamNames.forEach(team => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const h2 = document.createElement('h2');
+      h2.textContent = team;
+      card.appendChild(h2);
+
+      const list = document.createElement('div');
+      list.className = 'list';
+
+      teams[team]
+        .sort((a,b) => (b.ftd||0) - (a.ftd||0))
+        .forEach(row => {
+          const li = document.createElement('div');
+          li.className = 'row';
+
+          const left = document.createElement('div');
+          left.className = 'name';
+          const badge = document.createElement('span');
+          badge.className = 'badge';
+          badge.textContent = 'Stage';
+          const nm = document.createElement('span');
+          nm.textContent = row.stage;
+          left.appendChild(badge);
+          left.appendChild(nm);
+
+          const right = document.createElement('div');
+          right.className = 'ftd' + (row._up ? ' up' : '');
+          right.textContent = row.ftd;
+
+          li.appendChild(left);
+          li.appendChild(right);
+          list.appendChild(li);
+        });
+
+      card.appendChild(list);
+      grid.appendChild(card);
+    });
+  }
+
+  function toObjects(values){
+    // ожидается заголовок: Team | Stage | FTD
+    const [header, ...rows] = values;
+    const idx = {
+      team: header.findIndex(h => /team/i.test(h)),
+      stage: header.findIndex(h => /stage/i.test(h)),
+      ftd: header.findIndex(h => /ftd/i.test(h))
+    };
+    const out = rows.map(r => ({
+      team: r[idx.team] || '—',
+      stage: r[idx.stage] || '—',
+      ftd: Number(r[idx.ftd] ?? 0)
+    }));
+
+    // отметим рост FTD
+    out.forEach(o => {
+      const prev = prevByStage.get(o.stage);
+      if (prev != null && o.ftd > prev) {
+        o._up = true;
+      } else {
+        o._up = false;
+      }
+    });
+
+    // обновим словарь предыдущих
+    out.forEach(o => prevByStage.set(o.stage, o.ftd));
+
+    // если есть хотя бы один рост — салют
+    if (out.some(o => o._up)) makeConfettiBurst();
+    return out;
+  }
+
+  async function fetchFromSheets(){
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(CONFIG.RANGE)}?key=${CONFIG.API_KEY}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('Google Sheets API error');
+    const json = await res.json();
+    return json.values;
+  }
+
+  async function load(){
+    try {
+      const values = await fetchFromSheets();
+      const rows = toObjects(values);
+      render(rows);
+      statusEl.textContent = 'live';
+      statusEl.style.color = '#34d399';
+      statusEl.style.borderColor = 'rgba(52,211,153,.5)';
+      statusEl.style.background = 'rgba(52,211,153,.12)';
+    } catch (e) {
+      console.warn(e);
+      statusEl.textContent = 'offline (sample)';
+      statusEl.style.color = '#fbbf24';
+      statusEl.style.borderColor = 'rgba(251,191,36,.5)';
+      statusEl.style.background = 'rgba(251,191,36,.12)';
+      // Фолбэк-данные для демонстрации
+      const sample = [
+        ['Team','Stage','FTD'],
+        ['Team Alpha','Иван',5],
+        ['Team Alpha','Анна',7],
+        ['Team Beta','Пётр',4],
+        ['Team Beta','Ольга',8]
+      ];
+      const rows = toObjects(sample);
+      render(rows);
+    }
+  }
+
+  // Поллинг
+  load();
+  setInterval(load, CONFIG.POLL_MS);
+
+  // Кнопка: смоделировать рост FTD (для теста фейерверков)
+  document.getElementById('simulate').addEventListener('click', () => {
+    // вручную поднимем одного случайного участника
+    const grid = document.querySelectorAll('.row');
+    if (!grid.length) return;
+    const idx = Math.floor(Math.random() * grid.length);
+    const row = grid[idx];
+    const name = row.querySelector('.name span:last-child')?.textContent || '';
+    const current = Number(row.querySelector('.ftd')?.textContent || 0);
+    prevByStage.set(name, current); // зафиксируем прошлое
+    // следующее обновление загрузит данные; а сейчас просто запустим салют
+    makeConfettiBurst();
+  });
+  </script>
+</body>
+</html>
