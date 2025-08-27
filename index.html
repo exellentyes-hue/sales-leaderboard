@@ -248,7 +248,13 @@
 
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.browser.min.js"></script>
 
-  <script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.browser.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.browser.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.browser.min.js"></script>
+
+<script>
   const CONFIG = {
     SHEET_ID: "1mErOW57MrU_fhQnRsI1ZSldw7dpd7lrl4yu7EgMpx1o",
     API_KEY:  "AIzaSyCFS9Tse6vuK2O3PK4PyS0DDgRIzbC1F2E",
@@ -256,9 +262,66 @@
     POLL_MS:  5000
   };
 
-  const statusEl = document.getElementById('status');
-  let prevByStage = new Map();
+  // ---------- АУДИО ----------
+  const SOUND_SRC = 'videoplayback.mp3'; // замените на полный URL при GitHub Pages
+  const SOUND_POOL_SIZE = 4;
+  const soundPool = Array.from({length: SOUND_POOL_SIZE}, () => {
+    const a = new Audio(SOUND_SRC);
+    a.preload = 'auto';
+    a.playsInline = true;
+    a.volume = 0.9;
+    return a;
+  });
 
+  let soundEnabled = false;
+
+  function unlockAudioOnce() {
+    Promise.allSettled(soundPool.map(a => a.play().then(() => {
+      a.pause();
+      a.currentTime = 0;
+    }))).finally(() => {
+      soundEnabled = true;
+      console.log('[FTD] Audio unlocked');
+      updateToolbar();
+    });
+  }
+
+  function playFTDSound() {
+    if (!soundEnabled) return;
+    const a = soundPool.find(x => x.paused) || soundPool[0].cloneNode(true);
+    a.currentTime = 0;
+    a.play().catch(err => console.warn('[FTD] play error:', err));
+  }
+
+  // Вставим тулбар с одной кнопкой
+  function injectToolbar() {
+    const header = document.querySelector('header');
+    if (!header) return;
+    const bar = document.createElement('div');
+    bar.className = 'toolbar';
+    bar.style.marginLeft = '12px';
+
+    const btnEnable = document.createElement('button');
+    btnEnable.id = 'btn-audio';
+    btnEnable.textContent = '🔔 Включить звук';
+    btnEnable.title = 'Разрешите звук одним кликом';
+    btnEnable.addEventListener('click', unlockAudioOnce);
+
+    bar.appendChild(btnEnable);
+    header.appendChild(bar);
+
+    document.addEventListener('pointerdown', function once() {
+      if (!soundEnabled) unlockAudioOnce();
+      document.removeEventListener('pointerdown', once);
+    }, { once: true });
+  }
+
+  function updateToolbar() {
+    const btn = document.getElementById('btn-audio');
+    if (btn) btn.textContent = soundEnabled ? '🔊 Звук активен' : '🔔 Включить звук';
+  }
+
+  // ---------- ВИЗУАЛ ----------
   function makeConfettiBurst() {
     const duration = 1200;
     const end = Date.now() + duration;
@@ -269,65 +332,59 @@
     })();
   }
 
-function makeMoneyRain() {
+  function makeMoneyRain() {
     const canvas = document.getElementById("money-canvas");
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.src = "https://upload.wikimedia.org/wikipedia/commons/1/1a/USA_100_Dollar_Bill_Series2009_Obverse.png";
 
     const bills = [];
-    const count = 40; // Увеличено количество банкнот
-    const fallDuration = 8000; // Время падения в миллисекундах (8 секунд)
+    const count = 40;
+    const fallDuration = 8000;
 
-    // Создаем банкноты с начальными значениями
     for (let i = 0; i < count; i++) {
-        bills.push({
-            x: Math.random() * canvas.width, // Случайное горизонтальное положение
-            y: -100, // Начальная позиция сверху
-            speed: 2 + Math.random() * 5, // Скорость падения с случайным значением
-            rotation: Math.random() * 360, // Случайный угол вращения
-            rotationSpeed: (Math.random() - 0.5) * 10, // Случайная скорость вращения
-            size: 120 + Math.random() * 60, // Случайный размер
-            startTime: Date.now(), // Время старта падения для каждого билета
-            delay: Math.random() * 2000, // Задержка для разных банкнот (от 0 до 2000 мс)
-            waveOffset: Math.random() * 1000 - 500, // Смещение для волнообразного движения
-        });
+      bills.push({
+        x: Math.random() * canvas.width,
+        y: -100,
+        rotation: Math.random() * 360,
+        rotationSpeed: (Math.random() - 0.5) * 10,
+        size: 120 + Math.random() * 60,
+        startTime: Date.now(),
+        delay: Math.random() * 2000,
+        waveOffset: Math.random() * 1000 - 500,
+      });
     }
 
     function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        bills.forEach(b => {
-            // Вычисляем, как далеко должен переместиться каждый объект в зависимости от времени
-            const elapsedTime = Date.now() - b.startTime - b.delay;
-            const fallProgress = Math.min(elapsedTime / fallDuration, 1); // Прогресс падения (0 - 1)
-            const yPosition = b.y + fallProgress * (canvas.height + 100); // Двигаем вниз
+      bills.forEach(b => {
+        const elapsedTime = Date.now() - b.startTime - b.delay;
+        const fallProgress = Math.min(Math.max(elapsedTime / fallDuration, 0), 1);
+        const yPosition = b.y + fallProgress * (canvas.height + 100);
+        const waveMovement = Math.sin(fallProgress * Math.PI * 2 + b.waveOffset) * 150;
+        const xPosition = b.x + waveMovement;
 
-            // Волнообразное смещение по горизонтали
-            const waveMovement = Math.sin(fallProgress * Math.PI * 2 + b.waveOffset) * 150; // Волнообразная траектория
+        ctx.save();
+        ctx.translate(xPosition, yPosition);
+        ctx.rotate((b.rotation * Math.PI) / 180);
+        ctx.drawImage(img, -b.size / 2, -b.size / 4, b.size, b.size / 2);
+        ctx.restore();
 
-            const xPosition = b.x + waveMovement; // Смещаем по горизонтали с волнообразным движением
+        b.rotation += b.rotationSpeed;
+      });
 
-            ctx.save();
-            ctx.translate(xPosition, yPosition); // Двигаем на новые координаты
-            ctx.rotate((b.rotation * Math.PI) / 180);
-            ctx.drawImage(img, -b.size / 2, -b.size / 4, b.size, b.size / 2);
-            ctx.restore();
-
-            b.rotation += b.rotationSpeed; // Вращение банкноты
-        });
-
-        // Повторяем анимацию, если деньги еще не упали до конца
-        if (bills.some(b => Date.now() - b.startTime - b.delay < fallDuration)) {
-            requestAnimationFrame(draw);
-        }
+      if (bills.some(b => Date.now() - b.startTime - b.delay < fallDuration)) {
+        requestAnimationFrame(draw);
+      }
     }
 
     img.onload = draw;
-}
+  }
 
   function showOverlay(name, ftd) {
     const overlay = document.getElementById('overlay');
@@ -336,9 +393,21 @@ function makeMoneyRain() {
     overlay.classList.remove("show");
     void overlay.offsetWidth;
     overlay.classList.add("show");
-    setTimeout(() => {
-      overlay.classList.remove("show");
-    }, 2500);
+    setTimeout(() => overlay.classList.remove("show"), 2500);
+  }
+
+  // ---------- УТИЛС ----------
+  const prevByKey = new Map();
+
+  function normalizeKey(team, stage) {
+    return `${String(team||'').trim().toLowerCase()}|${String(stage||'').trim().toLowerCase()}`;
+  }
+
+  function toNum(x) {
+    if (typeof x === 'number') return x;
+    const s = String(x ?? '').replace(/\s+/g, '').replace(',', '.');
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
   }
 
   function groupByTeam(rows){
@@ -363,10 +432,10 @@ function makeMoneyRain() {
       h2.textContent = team;
       card.appendChild(h2);
 
-      const totalFTD = teams[team].reduce((sum, row) => sum + row.ftd, 0); // Суммируем FTD для команды
+      const totalFTD = teams[team].reduce((sum, row) => sum + row.ftd, 0);
       const totalFTDElement = document.createElement('div');
       totalFTDElement.className = 'total-ftd';
-      totalFTDElement.textContent = `FTD: ${totalFTD}`; // Отображаем общий FTD
+      totalFTDElement.textContent = `FTD: ${totalFTD}`;
       card.appendChild(totalFTDElement);
 
       const list = document.createElement('div');
@@ -384,26 +453,25 @@ function makeMoneyRain() {
           left.className = 'name';
           const badge = document.createElement('span');
           badge.className = 'badge';
-          
-          if (index === 0) { // Если это первый участник, добавляем золотой класс
-            badge.classList.add('first');
-          }
-          badge.textContent = counter; // Цифра участника
+
+          if (index === 0) badge.classList.add('first');
+          badge.textContent = counter;
+
           const nm = document.createElement('span');
-          nm.textContent = row.stage; // Имя участника
+          nm.textContent = row.stage;
 
           left.appendChild(badge);
           left.appendChild(nm);
 
           const right = document.createElement('div');
           right.className = 'ftd' + (row._up ? ' up' : '');
-          right.textContent = row.ftd; // Количество FTD
+          right.textContent = row.ftd;
 
           li.appendChild(left);
           li.appendChild(right);
           list.appendChild(li);
 
-          counter++; // Увеличиваем счетчик
+          counter++;
         });
 
       card.appendChild(list);
@@ -418,25 +486,28 @@ function makeMoneyRain() {
       stage: header.findIndex(h => /stage/i.test(h)),
       ftd: header.findIndex(h => /ftd/i.test(h))
     };
+
     const out = rows.map(r => ({
       team: r[idx.team] || '—',
       stage: r[idx.stage] || '—',
-      ftd: Number(r[idx.ftd] ?? 0)
+      ftd: toNum(r[idx.ftd])
     }));
 
     out.forEach(o => {
-      const prev = prevByStage.get(o.stage);
+      const key = normalizeKey(o.team, o.stage);
+      const prev = prevByKey.get(key);
       if (prev != null && o.ftd > prev) {
         o._up = true;
         makeConfettiBurst();
         makeMoneyRain();
+        playFTDSound();
         showOverlay(o.stage, o.ftd);
       } else {
         o._up = false;
       }
+      prevByKey.set(key, o.ftd);
     });
 
-    out.forEach(o => prevByStage.set(o.stage, o.ftd));
     return out;
   }
 
@@ -454,7 +525,7 @@ function makeMoneyRain() {
       const rows = toObjects(values);
       render(rows);
     } catch (e) {
-      console.warn(e);
+      console.warn('[FTD] Sheets error, using sample:', e);
       const sample = [
         ['Team','Stage','FTD'],
         ['Team Alpha','Иван',5],
@@ -467,8 +538,9 @@ function makeMoneyRain() {
     }
   }
 
+  injectToolbar();
   load();
   setInterval(load, CONFIG.POLL_MS);
-  </script>
+</script>
 </body>
 </html>
