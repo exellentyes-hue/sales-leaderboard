@@ -26,31 +26,132 @@
       gap:10px;
     }
     .pill{font-size:12px;background:rgba(125,211,252,.15);border:1px solid rgba(125,211,252,.35);padding:6px 10px;border-radius:999px;color:var(--accent)}
-    .grid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:16px}
-    @media(min-width:720px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    .card{background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00));border:1px solid rgba(255,255,255,.08);backdrop-filter: blur(6px);border-radius:18px;padding:16px 14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-    .card h2{margin:4px 0 10px 0;font-size:18px;font-weight:700;color:#e2e8f0}
-    .list{display:flex;flex-direction:column}
-    .row{display:flex;align-items:center;justify-content:space-between;padding:10px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);margin-bottom:8px}
-    .row .name{display:flex;align-items:center;gap:10px;font-weight:600}
-    .badge{font-size:11px;color:#cbd5e1;background:#0f172a;border:1px solid rgba(255,255,255,.08);padding:4px 8px;border-radius:999px}
-    .ftd{font-weight:700}
-    .ftd.up{color:var(--good)}
-    .first-place-row {
-      background-color: #FFD700;  /* золотой фон */
-      color: #FFD700;  /* золотые буквы */
+    
+    /* Центрирование карточек команд в ряд */
+    .grid {
+      display: flex;
+      flex-wrap: wrap; /* Все карточки в ряд с переносом */
+      justify-content: space-between; /* Распределение карточек по всей ширине */
+      gap: 16px;
     }
-    .footer{opacity:.75;font-size:12px;margin-top:10px}
-    .toolbar{display:flex;gap:8px;align-items:center}
-    button{cursor:pointer;background:#1e293b;color:#e2e8f0;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 10px;font-weight:600}
-    button:hover{background:#243046}
-    .hint{font-size:12px;color:var(--muted)}
+
+    .card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, .02), rgba(255, 255, 255, .00));
+      border: 1px solid rgba(255, 255, 255, .08);
+      backdrop-filter: blur(6px);
+      border-radius: 18px;
+      padding: 32px 28px; /* Увеличены внутренние отступы */
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+      position: relative;
+      flex: 1; /* Карточки будут занимать всю доступную ширину */
+      min-width: 320px; /* Минимальная ширина для карточки */
+      height: auto;
+    }
+
+    .card h2 {
+      margin: 4px 0 10px 0;
+      font-size: 24px; /* Увеличен размер шрифта */
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 12px; /* Увеличены внутренние отступы */
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, .06);
+      background: rgba(255, 255, 255, .02);
+      margin-bottom: 8px;
+    }
+
+    .row .name {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 16px; /* Увеличен размер шрифта */
+    }
+
+    .badge {
+      font-size: 14px; /* Увеличен размер шрифта */
+      color: #e8ecf8;
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, .08);
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+
+    .badge.first {
+      color: gold; /* Золотой цвет для первой цифры */
+    }
+
+    .row:first-child {
+      background-color: gold; /* Золотой фон для первой строки */
+      color: black; /* Чёрный текст */
+    }
+
+    .row:nth-child(2) {
+      background-color: silver; /* Серебряный фон для второй строки */
+      color: black; /* Чёрный текст */
+    }
+
+    .row:nth-child(3) {
+      background-color: #cd7f32; /* Бронзовый фон для третьей строки */
+      color: black; /* Чёрный текст */
+    }
+
+    .ftd {
+      font-weight: 700;
+      font-size: 18px; /* Увеличен размер шрифта */
+    }
+
+    .ftd.up {
+      color: var(--good);
+    }
+
+    .footer {
+      opacity: .75;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      cursor: pointer;
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-weight: 600;
+    }
+
+    button:hover {
+      background: #243046;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+    }
 
     /* ===== Оверлей с эффектами ===== */
     #overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.85);
+      background: rgba(0, 0, 0, 0.85);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -63,15 +164,32 @@
       opacity: 0;
       pointer-events: none;
     }
+
     #overlay.show {
       animation: zoomGlow 2s ease forwards;
     }
 
     @keyframes zoomGlow {
-      0% { transform: scale(0.2); opacity: 0; text-shadow: 0 0 0px var(--accent); }
-      40% { transform: scale(1.3); opacity: 1; text-shadow: 0 0 20px var(--accent), 0 0 40px #0ff; }
-      70% { transform: scale(1); opacity: 1; text-shadow: 0 0 25px #fff, 0 0 50px var(--accent); }
-      100% { transform: scale(1); opacity: 0; text-shadow: 0 0 0px transparent; }
+      0% {
+        transform: scale(0.2);
+        opacity: 0;
+        text-shadow: 0 0 0px var(--accent);
+      }
+      40% {
+        transform: scale(1.3);
+        opacity: 1;
+        text-shadow: 0 0 20px var(--accent), 0 0 40px #0ff;
+      }
+      70% {
+        transform: scale(1);
+        opacity: 1;
+        text-shadow: 0 0 25px #fff, 0 0 50px var(--accent);
+      }
+      100% {
+        transform: scale(1);
+        opacity: 0;
+        text-shadow: 0 0 0px transparent;
+      }
     }
 
     #overlay span {
@@ -83,9 +201,15 @@
     }
 
     @keyframes gradientMove {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
     }
 
     /* Canvas для денег */
@@ -94,6 +218,16 @@
       inset: 0;
       pointer-events: none;
       z-index: 5000;
+    }
+
+    /* Добавление общего FTD */
+    .total-ftd {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent);
+      position: absolute;
+      right: 10px;
+      top: 10px;
     }
   </style>
 </head>
@@ -135,7 +269,7 @@
     })();
   }
 
-  function makeMoneyRain() {
+function makeMoneyRain() {
     const canvas = document.getElementById("money-canvas");
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
@@ -145,38 +279,55 @@
     img.src = "https://upload.wikimedia.org/wikipedia/commons/1/1a/USA_100_Dollar_Bill_Series2009_Obverse.png";
 
     const bills = [];
-    const count = 20;
+    const count = 40; // Увеличено количество банкнот
+    const fallDuration = 8000; // Время падения в миллисекундах (8 секунд)
+
+    // Создаем банкноты с начальными значениями
     for (let i = 0; i < count; i++) {
-      bills.push({
-        x: Math.random() * canvas.width,
-        y: -100,
-        speed: 2 + Math.random() * 3,
-        rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 10,
-        size: 120 + Math.random() * 60
-      });
+        bills.push({
+            x: Math.random() * canvas.width, // Случайное горизонтальное положение
+            y: -100, // Начальная позиция сверху
+            speed: 2 + Math.random() * 5, // Скорость падения с случайным значением
+            rotation: Math.random() * 360, // Случайный угол вращения
+            rotationSpeed: (Math.random() - 0.5) * 10, // Случайная скорость вращения
+            size: 120 + Math.random() * 60, // Случайный размер
+            startTime: Date.now(), // Время старта падения для каждого билета
+            delay: Math.random() * 2000, // Задержка для разных банкнот (от 0 до 2000 мс)
+            waveOffset: Math.random() * 1000 - 500, // Смещение для волнообразного движения
+        });
     }
 
     function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      bills.forEach(b => {
-        ctx.save();
-        ctx.translate(b.x, b.y);
-        ctx.rotate((b.rotation * Math.PI) / 180);
-        ctx.drawImage(img, -b.size / 2, -b.size / 4, b.size, b.size/2);
-        ctx.restore();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        b.y += b.speed;
-        b.rotation += b.rotationSpeed;
-      });
+        bills.forEach(b => {
+            // Вычисляем, как далеко должен переместиться каждый объект в зависимости от времени
+            const elapsedTime = Date.now() - b.startTime - b.delay;
+            const fallProgress = Math.min(elapsedTime / fallDuration, 1); // Прогресс падения (0 - 1)
+            const yPosition = b.y + fallProgress * (canvas.height + 100); // Двигаем вниз
 
-      if (bills.some(b => b.y < canvas.height + 100)) {
-        requestAnimationFrame(draw);
-      }
+            // Волнообразное смещение по горизонтали
+            const waveMovement = Math.sin(fallProgress * Math.PI * 2 + b.waveOffset) * 150; // Волнообразная траектория
+
+            const xPosition = b.x + waveMovement; // Смещаем по горизонтали с волнообразным движением
+
+            ctx.save();
+            ctx.translate(xPosition, yPosition); // Двигаем на новые координаты
+            ctx.rotate((b.rotation * Math.PI) / 180);
+            ctx.drawImage(img, -b.size / 2, -b.size / 4, b.size, b.size / 2);
+            ctx.restore();
+
+            b.rotation += b.rotationSpeed; // Вращение банкноты
+        });
+
+        // Повторяем анимацию, если деньги еще не упали до конца
+        if (bills.some(b => Date.now() - b.startTime - b.delay < fallDuration)) {
+            requestAnimationFrame(draw);
+        }
     }
 
     img.onload = draw;
-  }
+}
 
   function showOverlay(name, ftd) {
     const overlay = document.getElementById('overlay');
@@ -199,7 +350,7 @@
     return teams;
   }
 
-  function render(rows) {
+  function render(rows){
     const grid = document.getElementById('grid');
     grid.innerHTML = '';
     const teams = groupByTeam(rows);
@@ -212,10 +363,16 @@
       h2.textContent = team;
       card.appendChild(h2);
 
+      const totalFTD = teams[team].reduce((sum, row) => sum + row.ftd, 0); // Суммируем FTD для команды
+      const totalFTDElement = document.createElement('div');
+      totalFTDElement.className = 'total-ftd';
+      totalFTDElement.textContent = `FTD: ${totalFTD}`; // Отображаем общий FTD
+      card.appendChild(totalFTDElement);
+
       const list = document.createElement('div');
       list.className = 'list';
 
-      let counter = 1; // Инициализируем счетчик
+      let counter = 1;
 
       teams[team]
         .sort((a,b) => (b.ftd || 0) - (a.ftd || 0))
@@ -223,30 +380,30 @@
           const li = document.createElement('div');
           li.className = 'row';
 
-          // Добавляем проверку для первого места и применяем класс для всей строки
-          if (index === 0) {
-            li.classList.add('first-place-row');  // Подсвечиваем всю строку
-          }
-
           const left = document.createElement('div');
           left.className = 'name';
           const badge = document.createElement('span');
           badge.className = 'badge';
-          badge.textContent = counter; // Выводим номер
+          
+          if (index === 0) { // Если это первый участник, добавляем золотой класс
+            badge.classList.add('first');
+          }
+          badge.textContent = counter; // Цифра участника
           const nm = document.createElement('span');
-          nm.textContent = row.stage;
+          nm.textContent = row.stage; // Имя участника
+
           left.appendChild(badge);
           left.appendChild(nm);
 
           const right = document.createElement('div');
           right.className = 'ftd' + (row._up ? ' up' : '');
-          right.textContent = row.ftd;
+          right.textContent = row.ftd; // Количество FTD
 
           li.appendChild(left);
           li.appendChild(right);
           list.appendChild(li);
 
-          counter++; // Увеличиваем счетчик для следующего участника
+          counter++; // Увеличиваем счетчик
         });
 
       card.appendChild(list);
@@ -254,7 +411,7 @@
     });
   }
 
-  function toObjects(values) {
+  function toObjects(values){
     const [header, ...rows] = values;
     const idx = {
       team: header.findIndex(h => /team/i.test(h)),
@@ -283,15 +440,15 @@
     return out;
   }
 
-  async function fetchFromSheets() {
+  async function fetchFromSheets(){
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(CONFIG.RANGE)}?key=${CONFIG.API_KEY}`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error('Google Sheets API error');
+    if(!res.ok) throw new Error('Google Sheets API error');
     const json = await res.json();
     return json.values;
   }
 
-  async function load() {
+  async function load(){
     try {
       const values = await fetchFromSheets();
       const rows = toObjects(values);
